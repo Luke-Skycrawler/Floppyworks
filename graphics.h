@@ -12,7 +12,8 @@
 
 #ifndef _graphics_h
 #define _graphics_h
-#include <Windows.h>
+
+#include <Windows.h>//must be placed before <wincon.h>
 #include <conio.h>
 #include <ctype.h>
 #include <math.h>
@@ -21,7 +22,6 @@
 #include <string.h>
 #include <time.h>
 #include <wincon.h>
-#include <windows.h>
 
 #include "gcalloc.h"
 #include "genlib.h"
