@@ -245,6 +245,13 @@ static int penColor;
 
 static int mouseX, mouseY;
 static bool mouseButton = FALSE;
+/**TODO: custom canvases. osdc is more of a pointer.
+ * --------------------------------------------------
+ * */
+static struct graphicsStateT canvasState[5];
+static HDC canvasDC[5];
+static int currentCanvas=0;
+static regionStateT canvasRegionState[5];
 
 /* Private function prototypes */
 
@@ -310,7 +317,6 @@ void InitGraphics(void)
     }
     DisplayClear();
     InitGraphicsState();
-
 }
 
 void MovePen(double x, double y)
@@ -760,7 +766,22 @@ static void InitGraphicsState(void)
     pointSize = DefaultSize;
     textStyle = Normal;
     stateStack = NULL;
+    graphicsStateT sb=NULL;
+    int i=0;
     regionState = NoRegion;
+
+    //set all the canvas into uniform
+    for (i=0,sb=canvasState;i<=4;i++,sb++){
+        sb->cx = cx;
+        sb->cy = cy;
+        sb->font = textFont;
+        sb->size = pointSize;
+        sb->style = textStyle;
+        sb->erase = eraseMode;
+        sb->color = penColor;
+        sb->link = NULL;
+        canvasRegionState[i]=regionState;
+    }
     DisplayFont(textFont, pointSize, textStyle);
 }
 
@@ -892,7 +913,9 @@ static void InitDisplay(void)
 
     UpdateWindow(graphicsWindow);
 
-    osdc = CreateCompatibleDC(gdc);
+    for (int i=0;i<=4;i++)//TODO:added 5 canvas
+        canvasDC[i]=CreateCompatibleDC(gdc);
+    osdc = canvasDC[MAIN_CANVAS];
 
     if (osdc == NULL) {
         Error("Internal error: Can't create offscreen device");
@@ -1195,13 +1218,13 @@ static void CheckEvents(void)
  * This function redraws the graphics window by copying bits from
  * the offscreen bitmap behind the osdc device context into the
  * actual display context.
+ *
  */
 static void DoUpdate(void)
 {
     HDC dc;
-
     dc = BeginPaint(graphicsWindow, &ps);
-    BitBlt(dc, 0, 0, pixelWidth, pixelHeight, osdc, 0, 0, SRCCOPY);
+    BitBlt(dc, 0, 0, pixelWidth, pixelHeight, canvasDC[0], 0, 0, SRCCOPY);
     EndPaint(graphicsWindow, &ps);
 }
 
@@ -1954,7 +1977,9 @@ double ScaleYInches(int y)/*y coordinate from pixels to inches*/
 {
  	  return GetWindowHeight()-(double)y/GetYResolution();
 }
-
+/**
+ * --------------------------------------------------------
+ * */
 void clearRect(double x1,double y1,double x2,double y2){
     RECT r;
     int px1,px2,py1,py2;
@@ -1967,4 +1992,55 @@ void clearRect(double x1,double y1,double x2,double y2){
     InvalidateRect(graphicsWindow, &r, TRUE);
     BitBlt(osdc, 0, 0, pixelWidth, pixelHeight, osdc, 0, 0, WHITENESS);
     // SetBkMode(osdc,OPAQUE);
+}
+
+int getPaintingCanvas(){
+    return currentCanvas;
+}
+
+int setPaintingCanvas(int canvasID){
+    graphicsStateT sb=canvasState+currentCanvas;//state backup
+    InitCheck();
+    sb->cx = cx;
+    sb->cy = cy;
+    sb->font = textFont;
+    sb->size = pointSize;
+    sb->style = textStyle;
+    sb->erase = eraseMode;
+    sb->color = penColor;
+    sb->link = NULL;//useless
+    canvasRegionState[canvasID] = regionState;
+    //save status.
+
+    //reset status to current, see restoreGraphicsState
+    if(canvasID<=4 && canvasID>=0)currentCanvas=canvasID;
+    else return -1;
+    regionState=canvasRegionState[canvasID];
+    sb=canvasState+currentCanvas;
+    osdc=canvasDC[currentCanvas];
+    cx = sb->cx;
+    cy = sb->cy;
+    textFont = sb->font;
+    pointSize = sb->size;
+    textStyle = sb->style;
+    eraseMode = sb->erase;
+    penColor = sb->color;
+    DisplayFont(textFont, pointSize, textStyle);
+    return 0;
+}
+
+int embedCanvas(int canvasID, double x1,double y1, double x2,double y2){
+    if(canvasID<=0||canvasID>4) return -1;
+    RECT r;
+    int px1,px2,py1,py2;
+    px1=ScaleX(x1);
+    px2=ScaleX(x2);
+    py1=ScaleY(y1);
+    py2=ScaleY(y2);
+    SetStretchBltMode(canvasDC[0],COLORONCOLOR);
+    // BitBlt(canvasDC[0],0,0,pixelWidth,pixelHeight,canvasDC[canvasID],0,0,SRCCOPY);
+    StretchBlt(canvasDC[0],px1,py2, px2-px1, py2-py1, canvasDC[canvasID],0,0,pixelWidth,pixelHeight, SRCCOPY);
+    SetRect(&r,x1,y2,x2,y1);
+    InvalidateRect(graphicsWindow,&r,TRUE);
+    return 0;
 }

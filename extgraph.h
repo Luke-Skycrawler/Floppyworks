@@ -383,6 +383,11 @@ string GetWindowTitle(void);
  * window and is necessary for animation.  Ordinarily, the
  * graphics window is updated only when the program waits for
  * user input.
+ * TODO:
+ * UpdateDisplay only update the canvasDC[0](aka MAIN_CANVAS),
+ * if you want to show other canvas,
+ * write a program of you own to stretch the other canvasDC
+ * into canvasDC[0]
  */
 
 void UpdateDisplay(void);
@@ -493,6 +498,7 @@ double ScaleYInches(int y);
 /**Global variable declaration
  * -------------------------------------------------------*/
 extern HWND consoleWindow, graphicsWindow;
+
 void startTimer(int id, int timeinterval);
 void cancelTimer(int id);
 void CloseConsole();
@@ -502,5 +508,56 @@ void DisplayClear();
 /**(x1, y1) is the lower-left corner, (x2, y2) is the upper-right.
  * */
 void clearRect(double x1, double y1, double x2, double y2);
+
+/*canvas macro, arranged according to geometric quadrant*/
+#define MAIN_CANVAS 0
+#define UP_RIGHT_CANVAS 1
+#define UP_LEFT_CANVAS 2
+#define BOTTOM_LEFT_CANVAS 3
+#define BOTTOM_RIGHT_CANVAS 4
+
+/**setPaintingCanvas()
+ *
+ * use it when you want to change
+ * the canvas you are painting,
+ * all DrawLine(), DrawTextString(), etc,
+ * will paint directly onto the assigned canvas
+ * without the need to pass excessive argument.
+ *
+ * Only when you use DoUpdate(),
+ * will the drawings on canvas be flushed onto the screen.
+ * (canvas is an abstraction from Device Context)
+ *
+ * In total, there are 5 canvases, default is 0,
+ * aka the main canvas.
+ *
+ * I added 4 canvas, see the macro definition above.
+ *
+ * FIXME:there might be something wrong when you are
+ * calling the GetCurrentX() function,
+ * because cx is only responsible for the main big cavas.
+ *
+ * TODO:
+ * UpdateDisplay() and DoUpdate() only update the canvasDC[0]
+ * (aka MAIN_CANVAS), if you want to show other canvas,
+ * write a program of you own to stretch the other canvasDC
+ * into canvasDC[0]
+ * 
+ * the funtion returns 0 if successful.
+ * */
+int setPaintingCanvas(int canvasID);
+
+/**
+ * returns the ID of Canvas you are painting now.
+ * */
+int getPaintingCanvas();
+
+/**
+ * embed canvasID into a rectangle in canvasDC[0],
+ * we forbid embedding itself.
+ * rectangle's bottom-left corner is ( x1, y1 ),
+ * upper-right ( x2, y2 )
+ * */
+int embedCanvas(int canvasID, double x1,double y1, double x2,double y2);
 
 #endif
