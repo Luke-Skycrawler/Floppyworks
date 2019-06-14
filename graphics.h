@@ -171,21 +171,29 @@ typedef enum
     RIGHT_BUTTON
 } ACL_Mouse_Button;
 
-typedef enum 
+typedef enum
 {
     BUTTON_DOWN,
     BUTTON_DOUBLECLICK,
     BUTTON_UP,
     ROLL_UP,
     ROLL_DOWN,
-    MOUSEMOVE	
+    MOUSEMOVE
 } ACL_Mouse_Event;
 
-typedef enum 
+typedef enum
 {
 	KEY_DOWN,
 	KEY_UP
 } ACL_Keyboard_Event;
+//----------------------
+typedef struct PB{
+    int rightbutton;
+    int middlebutton;
+//    int control;
+    // int shift;
+} pressedbutton;
+//----------------------
 //function pointers
 typedef void (*KeyboardEventCallback) (int key,int event);
 typedef void (*CharEventCallback) (char c);
@@ -202,4 +210,8 @@ void cancelCharEvent();
 void cancelMouseEvent();
 void cancelTimerEvent();
 
+int ScaleX(double x);
+int ScaleY(double y);
+double InchesX(int x);
+double InchesY(int y);
 #endif

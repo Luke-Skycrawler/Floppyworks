@@ -6,6 +6,7 @@
  * This file implements the graphics.h and extgraph.h interfaces
  * for the Borland/Windows platform.
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,7 +21,7 @@
 #include "genlib.h"
 #include "gcalloc.h"
 #include "strlib.h"
-#include "extgraph.h"//Already have included 'graphics.h' in it.
+#include "extgraph.h"
 
 /*
  * Parameters
@@ -44,10 +45,11 @@
  * GWClassName     -- Class name of the graphics window
  * DefaultFont     -- Font that serves as the "Default" font
  */
+
 #define DesiredWidth       10.0
 #define DesiredHeight      7.0
 #define DefaultSize       12
-#define MaxTitle          75
+#define MaxTitle          256
 #define MaxFontName       50
 #define MaxFonts         100
 #define LeftMargin        0/*10*/
@@ -72,6 +74,7 @@
  * Pi        -- Mathematical constant pi
  * AnyButton -- Union of all mouse buttons
  */
+
 #define LargeInt 16000
 #define Epsilon  0.00000000001
 #define Pi       3.1415926535
@@ -88,6 +91,7 @@ CharEventCallback g_char = NULL;
  * --------------------
  * This structure holds the variables that make up the graphics state.
  */
+
 typedef struct graphicsStateT {
     double cx, cy;
     string font;
@@ -103,6 +107,7 @@ typedef struct graphicsStateT {
  * ----------------
  * This structure holds the data for a font.
  */
+
 typedef struct {
     string name;
     int size, style;
@@ -124,6 +129,7 @@ typedef struct {
  * The current state determines whether other operations are legal
  * at that point.
  */
+
 typedef enum {
     NoRegion, RegionStarting, RegionActive, PenHasMoved
 } regionStateT;
@@ -133,6 +139,7 @@ typedef enum {
  * -----------------
  * This type is used for the entries in the color table.
  */
+
 typedef struct {
     string name;
     double red, green, blue;
@@ -147,6 +154,7 @@ typedef struct {
  * Note that this bitmap is inverted from that used on most
  * systems, with 0 indicating foreground and 1 indicating background.
  */
+
 static short fillList[][8] = {
     { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
     { 0x77, 0xDD, 0x77, 0xDD, 0x77, 0xDD, 0x77, 0xDD },
@@ -164,7 +172,7 @@ static short fillList[][8] = {
  * pauseOnExit    -- TRUE if library should pause when exiting
  * consoleWindow  -- Window handle for console window
  * graphicsWindow -- Window handoe for graphics window
- * gdc            -- Graphics DC (screen) (Device Context)
+ * gdc            -- Graphics DC (screen)
  * osdc           -- Offscreen DC (memory backup)
  * osbits         -- Offscreen bitmap
  * drawPen        -- Pen used for drawing
@@ -199,13 +207,13 @@ static short fillList[][8] = {
  * pointSize      -- Current point size      | graphics
  * penColor       -- Color of pen            | state
  */
+
 static int penSize = 1;
 
 static bool initialized = FALSE;
 static bool pauseOnExit = TRUE;
 
-HWND consoleWindow, graphicsWindow;//FIXME: Moved into graphics.h
-
+HWND consoleWindow, graphicsWindow;
 static HDC gdc, osdc;
 static HBITMAP osBits;
 static HPEN drawPen, erasePen, nullPen;
@@ -260,6 +268,7 @@ static LONG FAR PASCAL GraphicsEventProc(HWND w, UINT msg,
                                          WPARAM p1, LPARAM p2);
 static void CheckEvents(void);
 static void DoUpdate(void);
+void DisplayClear(void);
 static void PrepareToDraw(void);
 static void DisplayLine(double x, double y, double dx, double dy);
 static void DisplayArc(double xc, double yc, double rx, double ry,
@@ -287,17 +296,19 @@ static int RectHeight(RECT *rp);
 static void SetRectFromSize(RECT *rp, int x, int y, int width, int height);
 static double Radians(double degrees);
 static int Round(double x);
-static double InchesX(int x);
-static double InchesY(int y);
+double InchesX(int x);
+double InchesY(int y);
 static int PixelsX(double x);
 static int PixelsY(double y);
-static int ScaleX(double x);
-static int ScaleY(double y);
+int ScaleX(double x);
+int ScaleY(double y);
 static int Min(int x, int y);
 static int Max(int x, int y);
 
 /* Exported entries */
+
 /* Section 1 -- Basic functions from graphics.h */
+
 void InitGraphics(void)
 {
     if (!initialized) {
@@ -369,6 +380,7 @@ double GetCurrentY(void)
 }
 
 /* Section 2 -- Elliptical arcs */
+
 void DrawEllipticalArc(double rx, double ry,
                        double start, double sweep)
 {
@@ -393,6 +405,7 @@ void DrawEllipticalArc(double rx, double ry,
 }
 
 /* Section 3 -- Graphical structures */
+
 void StartFilledRegion(double grayScale)
 {
     InitCheck();
@@ -418,6 +431,7 @@ void EndFilledRegion(void)
 }
 
 /* Section 4 -- String functions */
+
 void DrawTextString(string text)
 {
     InitCheck();
@@ -492,6 +506,7 @@ double GetFontHeight(void)
 }
 
 /* Section 5 -- Mouse support */
+
 double GetMouseX(void)
 {
     InitCheck();
@@ -536,6 +551,7 @@ void WaitForMouseUp(void)
 }
 
 /* Section 6 -- Color support */
+
 bool HasColor(void)
 {
     InitCheck();
@@ -579,6 +595,7 @@ void DefineColor(string name,
 }
 
 /* Section 7 -- Miscellaneous functions */
+
 void SetPenSize(int size)
 {
     penSize = size;
@@ -730,6 +747,7 @@ double GetYResolution(void)
 }
 
 /* Private functions */
+
 /*
  * Function: InitCheck
  * Usage: InitCheck();
@@ -737,6 +755,7 @@ double GetYResolution(void)
  * This function merely ensures that the package has been
  * initialized before the client functions are called.
  */
+
 static void InitCheck(void)
 {
     if (!initialized) Error("InitGraphics has not been called");
@@ -752,6 +771,7 @@ static void InitCheck(void)
  * InitGraphicsState must call functions to ensure that these
  * values are initialized there as well.
  */
+
 static void InitGraphicsState(void)
 {
     cx = cy = 0;
@@ -764,16 +784,9 @@ static void InitGraphicsState(void)
     DisplayFont(textFont, pointSize, textStyle);
 }
 
-void CloseConsole(){
-    fclose(stdin);
-    fclose(stdout);
-    FreeConsole();
-}
-
 void InitConsole(void)
 {
     AllocConsole();
-    /*Very handy! As long as you remenber to fclose them.*/
     freopen("CONIN$", "r+t", stdin);
     freopen("CONOUT$", "w+t", stdout);
 }
@@ -802,8 +815,10 @@ void repaint()
  * procedure GraphicsEventProc, all it has to do is copy the
  * bits from the offscreen bitmap onto the screen.
  */
+
 static void InitDisplay(void)
 {
+    WNDCLASS wndcls;
     RECT bounds, consoleRect, graphicsRect;
     double screenHeight, screenWidth, xSpace, ySpace;
     double xScale, yScale, scaleFactor;
@@ -813,11 +828,7 @@ static void InitDisplay(void)
     /*clrscr();*/
     system("cls");
     atexit(DisplayExit);
-    /**
-     * TODO: Very tricky!!!!
-     * You must alter the style and add DBLCLK style
-     * into the */
-    RegisterWindowClass();
+/*    RegisterWindowClass();*/
     consoleWindow = FindConsoleWindow();
     initialized = FALSE;
     xResolution = GetXResolution();
@@ -846,7 +857,6 @@ static void InitDisplay(void)
 	g_mouse = NULL;
 	g_timer = NULL;
 
-    WNDCLASS wndcls;
     wndcls.cbClsExtra = 0;
     wndcls.cbWndExtra = 0;
     wndcls.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
@@ -888,7 +898,7 @@ static void InitDisplay(void)
     pixelWidth = RectWidth(&bounds);
     pixelHeight = RectHeight(&bounds);
 
-    ShowWindow(graphicsWindow, SW_SHOWNORMAL);//TODO:
+    ShowWindow(graphicsWindow, SW_SHOWNORMAL);
 
     UpdateWindow(graphicsWindow);
 
@@ -912,6 +922,7 @@ static void InitDisplay(void)
                  consoleRect.left, consoleRect.top,
                  RectWidth(&consoleRect), RectHeight(&consoleRect), 0);
     */
+
     InitDrawingTools();
 }
 
@@ -927,6 +938,7 @@ static void InitDisplay(void)
  * foreground/background colors, the drawing pens, and the brushes
  * for filled regions.
  */
+
 static void InitDrawingTools(void)
 {
     int i;
@@ -956,6 +968,7 @@ static void InitDrawingTools(void)
  * return key, this function frees the window system handles and
  * destroys the console window, thereby exiting the program.
  */
+
 static void DisplayExit(void)
 {
     int i;
@@ -987,6 +1000,7 @@ static void DisplayExit(void)
  * enumerating the windows and looking for the first one whose
  * title ends with .EXE, which the EasyWin package puts there.
  */
+
 static HWND FindConsoleWindow(void)
 {
     HWND result;
@@ -1002,6 +1016,7 @@ static HWND FindConsoleWindow(void)
  * This callback procedure is used by the FindConsoleWindow
  * call to find the window whose title ends with .EXE.
  */
+
 static BOOL CALLBACK EnumerateProc(HWND window, LPARAM clientData)
 {
     HWND *wptr;
@@ -1024,6 +1039,7 @@ static BOOL CALLBACK EnumerateProc(HWND window, LPARAM clientData)
  * This function registers the window class used for the graphics
  * window.
  */
+
 static void RegisterWindowClass(void)
 {
     WNDCLASS wcApp;
@@ -1035,9 +1051,7 @@ static void RegisterWindowClass(void)
     wcApp.hIcon = NULL;
     wcApp.lpszMenuName = NULL;
     wcApp.hbrBackground = GetStockObject(WHITE_BRUSH);
-    /*FIXME:
-    Key changes! bitwise add CS_DLBCLKS Macro into the flag.*/
-    wcApp.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
+    wcApp.style = CS_HREDRAW | CS_VREDRAW;
     wcApp.cbClsExtra = wcApp.cbWndExtra = 0;
     if (!RegisterClass(&wcApp)) {
         Error("Internal error: RegisterClass failed\n");
@@ -1052,14 +1066,18 @@ static void RegisterWindowClass(void)
  * graphics window.  The only event this package needs to handle
  * is the paint event, which forces a screen update.
  */
+
 static LONG FAR PASCAL GraphicsEventProc(HWND hwnd, UINT msg,
                                          WPARAM wParam, LPARAM lParam)
 {
     switch(msg)
     {
-        /*TODO: They say we can get rid of glitching with this line.*/
-        case WM_ERASEBKGND:
-            return 0;
+		// 刘新国：使用了double buffer, 手动清屏，
+		//         无需系统擦除背景，避免闪烁
+		//         感谢18级石蒙同学，提供这个方法解决刷新闪烁问题
+		case WM_ERASEBKGND:
+			return 0;
+
         case WM_PAINT:
              DoUpdate();
              return 0;
@@ -1145,6 +1163,7 @@ static LONG FAR PASCAL GraphicsEventProc(HWND hwnd, UINT msg,
         case WM_DESTROY:
             PostQuitMessage(0);
             return 0;
+
         default:
             return DefWindowProc(hwnd, msg, wParam, lParam);
     }
@@ -1179,6 +1198,7 @@ static LONG FAR PASCAL GraphicsEventProc(HWND hwnd, UINT msg,
  * This function is called from inside the mouse query functions to
  * ensure that pending events are processed.
  */
+
 static void CheckEvents(void)
 {
     MSG msg;
@@ -1196,6 +1216,7 @@ static void CheckEvents(void)
  * the offscreen bitmap behind the osdc device context into the
  * actual display context.
  */
+
 static void DoUpdate(void)
 {
     HDC dc;
@@ -1211,13 +1232,14 @@ static void DoUpdate(void)
  * ----------------------
  * This function clears all the bits in the offscreen bitmap.
  */
+
 void DisplayClear(void)
 {
     RECT r;
 
     SetRect(&r, 0, 0, pixelWidth, pixelHeight);
     InvalidateRect(graphicsWindow, &r, TRUE);
-    BitBlt(osdc, 0, 0, pixelWidth, pixelHeight, osdc, 0, 0, WHITENESS);
+    BitBlt(osdc, 0, 0, pixelWidth, pixelHeight, NULL, 0, 0, WHITENESS);
 }
 
 /*
@@ -1227,12 +1249,14 @@ void DisplayClear(void)
  * This function must be called before any rendering operation
  * to ensure the pen modes and colors are correctly set.
  */
+
 static void PrepareToDraw(void)
 {
     int red, green, blue;
 /*
     HPEN oldPen;
 */
+
     if (eraseMode) {
         DeleteObject(erasePen);
         erasePen = (HPEN) CreatePen(PS_SOLID, penSize, eraseColor);
@@ -1261,6 +1285,7 @@ static void PrepareToDraw(void)
  * region is started, it adds the line to the developing polygonal
  * region instead.
  */
+
 static void DisplayLine(double x, double y, double dx, double dy)
 {
     int x0, y0, x1, y1;
@@ -1291,6 +1316,7 @@ static void DisplayLine(double x, double y, double dx, double dy)
  * is not being assembled; if it is, the package calls RenderArc
  * instead.
  */
+
 static void DisplayArc(double xc, double yc, double rx, double ry,
                        double start, double sweep)
 {
@@ -1330,6 +1356,7 @@ static void DisplayArc(double xc, double yc, double rx, double ry,
  * constructing a path of consecutive segments, which are added
  * to the current polygonal region.
  */
+
 static void RenderArc(double x, double y, double rx, double ry,
                       double start, double sweep)
 {
@@ -1368,6 +1395,7 @@ static void RenderArc(double x, double y, double rx, double ry,
  * This function displays a text string at (x, y) in the current
  * font and size.  The hard work is done in DisplayFont.
  */
+
 static void DisplayText(double x, double y, string text)
 {
     RECT r;
@@ -1393,6 +1421,7 @@ static void DisplayText(double x, double y, string text)
  * matches the desired font string.  If an acceptable font
  * is found, its data is entered into the font table.
  */
+
 static void DisplayFont(string font, int size, int style)
 {
     char fontBuffer[MaxFontName + 1];
@@ -1458,6 +1487,7 @@ static void DisplayFont(string font, int size, int style)
  * no match is found, The caller has already converted the name
  * to lower case to preserve the case-insensitivity requirement.
  */
+
 static int FindExistingFont(string name, int size, int style)
 {
     int i;
@@ -1477,6 +1507,7 @@ static int FindExistingFont(string name, int size, int style)
  * This function sets the rectangle dimensions to the bounding
  * box of the line.
  */
+
 static void SetLineBB(RECT *rp, double x, double y, double dx, double dy)
 {
     int x0, y0, x1, y1;
@@ -1498,6 +1529,7 @@ static void SetLineBB(RECT *rp, double x, double y, double dx, double dy)
  * This function sets the rectangle dimensions to the bounding
  * box of the arc segment specified by the remaining arguments.
  */
+
 static void SetArcBB(RECT *rp, double xc, double yc,
                      double rx, double ry, double start, double sweep)
 {
@@ -1559,6 +1591,7 @@ static void SetArcBB(RECT *rp, double xc, double yc,
  * This function sets the rectangle dimensions to the bounding
  * box of the text string using the current font and size.
  */
+
 static void SetTextBB(RECT *rp, double x, double y, string text)
 {
     SIZE textSize;
@@ -1592,6 +1625,7 @@ static void SetTextBB(RECT *rp, double x, double y, string text)
  * by doubling the size of the array.  All storage is freed
  * after calling DisplayPolygon.
  */
+
 static void StartPolygon(void)
 {
     polygonPoints = NewArray(PStartSize, POINT);
@@ -1642,6 +1676,7 @@ static void DisplayPolygon(void)
  * function does the work, but AddSegment has a more easily understood
  * interface.
  */
+
 static void AddPolygonPoint(int x, int y)
 {
     POINT *newPolygon;
@@ -1671,6 +1706,7 @@ static void AddPolygonPoint(int x, int y)
  * --------------------
  * This function defines the built-in colors.
  */
+
 static void InitColors(void)
 {
     nColors = 0;
@@ -1697,6 +1733,7 @@ static void InitColors(void)
  * This function returns the index of the named color in the
  * color table, or -1 if the color does not exist.
  */
+
 static int FindColorName(string name)
 {
     int i;
@@ -1713,6 +1750,7 @@ static int FindColorName(string name)
  * This section contains several extremely short utility functions
  * that improve the readability of the code.
  */
+
 /*
  * Function: StringMatch
  * Usage: if (StringMatch(s1, s2)) . . .
@@ -1720,6 +1758,7 @@ static int FindColorName(string name)
  * This function returns TRUE if two strings are equal, ignoring
  * case distinctions.
  */
+
 static bool StringMatch(string s1, string s2)
 {
     register char *cp1, *cp2;
@@ -1741,6 +1780,7 @@ static bool StringMatch(string s1, string s2)
  * This function returns TRUE if prefix is the initial substring
  * of str, ignoring differences in case.
  */
+
 static bool PrefixMatch(char *prefix, char *str)
 {
     while (*prefix != '\0') {
@@ -1756,6 +1796,7 @@ static bool PrefixMatch(char *prefix, char *str)
  * --------------------------------
  * These functions return the width and height of a rectangle.
  */
+
 static int RectWidth(RECT *rp)
 {
     return (rp->right - rp->left);
@@ -1773,6 +1814,7 @@ static int RectHeight(RECT *rp)
  * This function is similar to SetRect except that it takes width
  * and height parameters rather than right and bottom.
  */
+
 static void SetRectFromSize(RECT *rp, int x, int y, int width, int height)
 {
     SetRect(rp, x, y, x + width, y + height);
@@ -1784,6 +1826,7 @@ static void SetRectFromSize(RECT *rp, int x, int y, int width, int height)
  * ----------------------------------
  * This functions convert an angle in degrees to radians.
  */
+
 static double Radians(double degrees)
 {
     return (degrees * Pi / 180);
@@ -1795,6 +1838,7 @@ static double Radians(double degrees)
  * --------------------
  * This function rounds a double to the nearest integer.
  */
+
 static int Round(double x)
 {
     return ((int) floor(x + 0.5));
@@ -1809,12 +1853,13 @@ static int Round(double x)
  * Because the resolution may not be uniform in the horizontal and
  * vertical directions, the coordinates are treated separately.
  */
-static double InchesX(int x)
+
+double InchesX(int x)
 {
     return ((double) x / xResolution);
 }
 
-static double InchesY(int y)
+double InchesY(int y)
 {
     return ((double) y / yResolution);
 }
@@ -1826,6 +1871,7 @@ static double InchesY(int y)
  * --------------------------------
  * These functions convert distances measured in inches to pixels.
  */
+
 static int PixelsX(double x)
 {
     return (Round(x * xResolution + Epsilon));
@@ -1846,12 +1892,13 @@ static int PixelsY(double y)
  * be inverted top to bottom to support the cartesian coordinates of
  * the graphics.h model.
  */
-static int ScaleX(double x)
+
+int ScaleX(double x)
 {
     return (PixelsX(x));
 }
 
-static int ScaleY(double y)
+int ScaleY(double y)
 {
     return (PixelsY(windowHeight - y));
 }
@@ -1863,6 +1910,7 @@ static int ScaleY(double y)
  * -----------------------
  * These functions find the minimum and maximum of two integers.
  */
+
 static int Min(int x, int y)
 {
     return ((x < y) ? x : y);
@@ -1881,6 +1929,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
 
 {
     MSG messages;            /* Here messages to the application are saved */
+
     Main();
 
     /* Run the message loop. It will run until GetMessage() returns 0 */
@@ -1954,17 +2003,8 @@ double ScaleYInches(int y)/*y coordinate from pixels to inches*/
 {
  	  return GetWindowHeight()-(double)y/GetYResolution();
 }
-
-void clearRect(double x1,double y1,double x2,double y2){
-    RECT r;
-    int px1,px2,py1,py2;
-    px1=ScaleX(x1);
-    px2=ScaleX(x2);
-    py1=ScaleY(y1);
-    py2=ScaleY(y2);
-    SetRect(&r,px1,py2,px2,py1);
-    // SetBkMode(osdc,TRANSPARENT);
-    InvalidateRect(graphicsWindow, &r, TRUE);
-    BitBlt(osdc, 0, 0, pixelWidth, pixelHeight, osdc, 0, 0, WHITENESS);
-    // SetBkMode(osdc,OPAQUE);
+void CloseConsole(){
+    fclose(stdin);
+    fclose(stdout);
+    FreeConsole();
 }
